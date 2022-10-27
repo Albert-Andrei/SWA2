@@ -47,23 +47,80 @@ export class Board<T> {
   canMove(first: Position, second: Position): boolean {
     const sameColumn = first.col === second.col;
     const sameRow = first.col === second.col;
+
     if (
-      sameColumn &&
-      (first.row + 1 === second.row || first.row - 1 === second.row)
+      !this.isValidRow(first.row) ||
+      !this.isValidColumn(first.col) ||
+      !this.isValidRow(second.row) ||
+      !this.isValidColumn(second.col)
     ) {
-      return true;
-    } else if (
-      sameRow &&
-      (first.col + 1 === second.col || first.col - 1 === second.col)
-    ) {
-      return true;
-    } else {
       return false;
+    }
+
+    if ((sameRow && !sameColumn) || (!sameRow && sameColumn)) {
+      return false;
+    } else {
+      return this.validateSwap(first, second);
     }
   }
 
   move(first: Position, second: Position) {
     if (this.canMove(first, second)) {
+      let temp = this.board[first.row][first.col];
+      this.board[first.row][first.col] = this.board[second.row][second.col];
+      this.board[second.row][second.col] = temp;
     }
+  }
+
+  private isValidRow(index: number) {
+    return index >= 0 && index < this.height;
+  }
+
+  private isValidColumn(index: number) {
+    return index >= 0 && index < this.width;
+  }
+
+  private validateSwap(first: Position, second: Position) {
+    const sameColumn = first.col === second.col;
+
+    let testArray = JSON.parse(JSON.stringify(this.board));
+    let temp = testArray[first.row][first.col];
+    testArray[first.row][first.col] = testArray[second.row][second.col];
+    testArray[second.row][second.col] = temp;
+
+    if (sameColumn) {
+      let columnValues = testArray.map((d) => d[first.col]);
+      return (
+        this.checkForMatch(testArray[first.row]) ||
+        this.checkForMatch(testArray[second.row]) ||
+        this.checkForMatch(columnValues)
+      );
+    } else {
+      let firstColumn = testArray.map((d) => d[first.col]);
+      let secondColumn = testArray.map((d) => d[second.col]);
+      return (
+        this.checkForMatch(firstColumn) ||
+        this.checkForMatch(secondColumn) ||
+        this.checkForMatch(testArray[first.row])
+      );
+    }
+  }
+
+  private checkForMatch(array: any[]) {
+    var count = 0,
+      value = array[0],
+      matched = 0;
+
+    array.some((a) => {
+      if (value !== a) {
+        count = 0;
+        value = a;
+      }
+      ++count;
+      if (count >= 3) {
+        matched = count;
+      }
+    });
+    return matched >= 3;
   }
 }
