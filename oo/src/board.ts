@@ -12,7 +12,7 @@ export type Match<T> = {
 
 export type BoardEvent<T> = {
   kind: 'Match' | 'Refill';
-  match: Match<T>;
+  match?: Match<T>;
 };
 
 type BoardItem<T> = {
@@ -96,10 +96,12 @@ export class Board<T> {
   private validateSwap(first: Position, second: Position) {
     const sameColumn = first.col === second.col;
 
-    let testArray = JSON.parse(JSON.stringify(this.board));
-    let temp = testArray[first.row][first.col];
-    testArray[first.row][first.col] = testArray[second.row][second.col];
-    testArray[second.row][second.col] = temp;
+    let testArray: BoardItem<T>[][] = JSON.parse(JSON.stringify(this.board));
+
+    let temp = testArray[first.row][first.col].value;
+    testArray[first.row][first.col].value =
+      testArray[second.row][second.col].value;
+    testArray[second.row][second.col].value = temp;
 
     if (sameColumn) {
       let columnValues = testArray.map((d) => d[first.col]);
@@ -119,6 +121,34 @@ export class Board<T> {
     }
   }
 
+  private emitEvent(type: 'Match' | 'Refill') {
+    if (this.listener == null) {
+      return;
+    }
+
+    let event: BoardEvent<T>;
+
+    switch (type) {
+      case 'Match':
+        event = {
+          kind: 'Match',
+          match: {
+            matched: this.matchedItems[0].value,
+            positions: this.matchedItems.map((a) => a.position),
+          },
+        };
+        break;
+      case 'Refill':
+        event = { kind: 'Match' };
+        break;
+      default:
+        event = null;
+        break;
+    }
+
+    this.listener(event);
+  }
+
   private checkForMatch(array: BoardItem<T>[]) {
     var count = 0,
       value: T,
@@ -136,17 +166,20 @@ export class Board<T> {
       if (count >= 3) {
         matched = count;
         this.matchedItems = matchedItems;
+        this.emitEvent('Match');
       }
     });
 
-    console.log(
-      'Validation ',
-      array,
-      ' result: ',
-      matched >= 3,
-      ' Matched Items ',
-      this.matchedItems,
-    );
+    // if (matched >= 3) {
+    //   console.log(
+    //     'Validation ',
+    //     array,
+    //     ' result: ',
+    //     matched >= 3,
+    //     ' Matched Items ',
+    //     this.matchedItems,
+    //   );
+    // }
     matchedItems = [];
     this.matchedItems = [];
     return matched >= 3;
