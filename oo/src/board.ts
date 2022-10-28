@@ -79,9 +79,10 @@ export class Board<T> {
 
   move(first: Position, second: Position) {
     if (this.canMove(first, second)) {
-      let temp = this.board[first.row][first.col];
-      this.board[first.row][first.col] = this.board[second.row][second.col];
-      this.board[second.row][second.col] = temp;
+      let temp = this.board[first.row][first.col].value;
+      this.board[first.row][first.col].value =
+        this.board[second.row][second.col].value;
+      this.board[second.row][second.col].value = temp;
     }
   }
 
@@ -91,34 +92,6 @@ export class Board<T> {
 
   private isValidColumn(index: number) {
     return index >= 0 && index < this.width;
-  }
-
-  private validateSwap(first: Position, second: Position) {
-    const sameColumn = first.col === second.col;
-
-    let testArray: BoardItem<T>[][] = JSON.parse(JSON.stringify(this.board));
-
-    let temp = testArray[first.row][first.col].value;
-    testArray[first.row][first.col].value =
-      testArray[second.row][second.col].value;
-    testArray[second.row][second.col].value = temp;
-
-    if (sameColumn) {
-      let columnValues = testArray.map((d) => d[first.col]);
-      return (
-        this.checkForMatch(testArray[first.row]) ||
-        this.checkForMatch(testArray[second.row]) ||
-        this.checkForMatch(columnValues)
-      );
-    } else {
-      let firstColumn = testArray.map((d) => d[first.col]);
-      let secondColumn = testArray.map((d) => d[second.col]);
-      return (
-        this.checkForMatch(firstColumn) ||
-        this.checkForMatch(secondColumn) ||
-        this.checkForMatch(testArray[first.row])
-      );
-    }
   }
 
   private emitEvent(type: 'Match' | 'Refill') {
@@ -139,14 +112,42 @@ export class Board<T> {
         };
         break;
       case 'Refill':
-        event = { kind: 'Match' };
+        event = { kind: 'Refill' };
         break;
       default:
         event = null;
         break;
     }
-
     this.listener(event);
+  }
+
+  private validateSwap(first: Position, second: Position) {
+    const sameColumn = first.col === second.col;
+
+    let testArray: BoardItem<T>[][] = JSON.parse(JSON.stringify(this.board));
+
+    let temp = testArray[first.row][first.col].value;
+    testArray[first.row][first.col].value =
+      testArray[second.row][second.col].value;
+    testArray[second.row][second.col].value = temp;
+
+    if (sameColumn) {
+      let columnValues = testArray.map((d) => d[first.col]);
+      let matchedFirstRow = this.checkForMatch(testArray[first.row]);
+      let matchedSecondRow = this.checkForMatch(testArray[second.row]);
+      let matchedColumn = this.checkForMatch(columnValues);
+
+      return matchedFirstRow || matchedSecondRow || matchedColumn;
+    } else {
+      let firstColumn = testArray.map((d) => d[first.col]);
+      let secondColumn = testArray.map((d) => d[second.col]);
+
+      let matchedFirstCol = this.checkForMatch(firstColumn);
+      let matchedSecondRCol = this.checkForMatch(secondColumn);
+      let matchedRow = this.checkForMatch(testArray[first.row]);
+
+      return matchedFirstCol || matchedSecondRCol || matchedRow;
+    }
   }
 
   private checkForMatch(array: BoardItem<T>[]) {
@@ -166,20 +167,24 @@ export class Board<T> {
       if (count >= 3) {
         matched = count;
         this.matchedItems = matchedItems;
+        console.log('Here', {
+          value: this.matchedItems[0].value,
+          items: this.matchedItems,
+        });
         this.emitEvent('Match');
       }
     });
 
-    // if (matched >= 3) {
-    //   console.log(
-    //     'Validation ',
-    //     array,
-    //     ' result: ',
-    //     matched >= 3,
-    //     ' Matched Items ',
-    //     this.matchedItems,
-    //   );
-    // }
+    if (matched >= 3) {
+      // console.log(
+      //   'Validation ',
+      //   array,
+      //   ' result: ',
+      //   matched >= 3,
+      //   ' Matched Items ',
+      //   this.matchedItems,
+      // );
+    }
     matchedItems = [];
     this.matchedItems = [];
     return matched >= 3;
