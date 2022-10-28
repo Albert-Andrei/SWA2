@@ -131,6 +131,8 @@ export class Board<T> {
       testArray[second.row][second.col].value;
     testArray[second.row][second.col].value = temp;
 
+    // console.log('Opaaa ', this.board, testArray);
+
     if (sameColumn) {
       let columnValues = testArray.map((d) => d[first.col]);
       let matchedFirstRow = this.checkForMatch(testArray[first.row]);
@@ -142,9 +144,9 @@ export class Board<T> {
       let firstColumn = testArray.map((d) => d[first.col]);
       let secondColumn = testArray.map((d) => d[second.col]);
 
+      let matchedRow = this.checkForMatch(testArray[first.row]);
       let matchedFirstCol = this.checkForMatch(firstColumn);
       let matchedSecondRCol = this.checkForMatch(secondColumn);
-      let matchedRow = this.checkForMatch(testArray[first.row]);
 
       return matchedFirstCol || matchedSecondRCol || matchedRow;
     }
