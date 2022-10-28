@@ -20,14 +20,15 @@ type BoardItem<T> = {
   position: Position;
 };
 
-export type BoardListener<T> = {};
+export type BoardListener<T> = (event: BoardEvent<T>) => void;
 
 export class Board<T> {
   generator: Generator<T>;
   width: number;
   height: number;
-  board: T[][];
+  board: BoardItem<T>[][];
   matchedItems: BoardItem<T>[];
+  listener: BoardListener<T>;
 
   constructor(generator: Generator<T>, width: number, height: number) {
     this.generator = generator;
@@ -36,19 +37,24 @@ export class Board<T> {
     this.matchedItems = [];
     this.board = [...Array(height)].map(() => [...Array(width)]);
 
-    for (let i = 0; i < height; i++) {
-      for (let j = 0; j < width; j++) {
-        this.board[i][j] = generator.next();
+    for (let i = 0; i < this.height; i++) {
+      for (let j = 0; j < this.width; j++) {
+        this.board[i][j] = {
+          value: generator.next(),
+          position: { row: i, col: j },
+        };
       }
     }
   }
 
-  addListener(listener: BoardListener<T>) {}
+  addListener(listener: BoardListener<T>) {
+    this.listener = listener;
+  }
 
   piece(p: Position): T | undefined {
     return p.col > this.height || p.row > this.width || p.col < 0 || p.row < 0
       ? undefined
-      : this.board[p.row][p.col];
+      : this.board[p.row][p.col]?.value;
   }
 
   canMove(first: Position, second: Position): boolean {
@@ -91,16 +97,6 @@ export class Board<T> {
     const sameColumn = first.col === second.col;
 
     let testArray = JSON.parse(JSON.stringify(this.board));
-
-    for (let i = 0; i < this.height; i++) {
-      for (let j = 0; j < this.width; j++) {
-        testArray[i][j] = {
-          value: this.piece({ row: i, col: j }),
-          position: { row: i, col: j },
-        };
-      }
-    }
-
     let temp = testArray[first.row][first.col];
     testArray[first.row][first.col] = testArray[second.row][second.col];
     testArray[second.row][second.col] = temp;
