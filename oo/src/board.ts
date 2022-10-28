@@ -15,6 +15,11 @@ export type BoardEvent<T> = {
   match: Match<T>;
 };
 
+type BoardItem<T> = {
+  value: T;
+  position: Position;
+};
+
 export type BoardListener<T> = {};
 
 export class Board<T> {
@@ -22,11 +27,13 @@ export class Board<T> {
   width: number;
   height: number;
   board: T[][];
+  matchedItems: BoardItem<T>[];
 
   constructor(generator: Generator<T>, width: number, height: number) {
     this.generator = generator;
     this.width = width;
     this.height = height;
+    this.matchedItems = [];
     this.board = [...Array(height)].map(() => [...Array(width)]);
 
     for (let i = 0; i < height; i++) {
@@ -84,6 +91,16 @@ export class Board<T> {
     const sameColumn = first.col === second.col;
 
     let testArray = JSON.parse(JSON.stringify(this.board));
+
+    for (let i = 0; i < this.height; i++) {
+      for (let j = 0; j < this.width; j++) {
+        testArray[i][j] = {
+          value: this.piece({ row: i, col: j }),
+          position: { row: i, col: j },
+        };
+      }
+    }
+
     let temp = testArray[first.row][first.col];
     testArray[first.row][first.col] = testArray[second.row][second.col];
     testArray[second.row][second.col] = temp;
@@ -106,21 +123,36 @@ export class Board<T> {
     }
   }
 
-  private checkForMatch(array: any[]) {
+  private checkForMatch(array: BoardItem<T>[]) {
     var count = 0,
-      value = array[0],
-      matched = 0;
+      value: T,
+      matched = 0,
+      matchedItems = [];
 
     array.some((a) => {
-      if (value !== a) {
+      if (value !== a.value) {
         count = 0;
-        value = a;
+        value = a.value;
+        matchedItems = [];
       }
       ++count;
+      matchedItems.push(a);
       if (count >= 3) {
         matched = count;
+        this.matchedItems = matchedItems;
       }
     });
+
+    console.log(
+      'Validation ',
+      array,
+      ' result: ',
+      matched >= 3,
+      ' Matched Items ',
+      this.matchedItems,
+    );
+    matchedItems = [];
+    this.matchedItems = [];
     return matched >= 3;
   }
 }

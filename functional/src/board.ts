@@ -17,6 +17,11 @@ export type Board<T> = {
   board: T[][];
 };
 
+type BoardItem<T> = {
+  value: T;
+  position: Position;
+};
+
 export type Effect<T> = {};
 
 export type MoveResult<T> = {
@@ -71,7 +76,7 @@ export function canMove<T>(
   if ((sameRow && !sameColumn) || (!sameRow && sameColumn)) {
     return false;
   } else {
-    return validateSwap(first, second, board.board);
+    return validateSwap(first, second, board);
   }
 }
 
@@ -92,10 +97,20 @@ const isValidColumn = (index: number) => {
   return index >= 0 && index < 4;
 };
 
-const validateSwap = (first: Position, second: Position, board: any[][]) => {
+const validateSwap = (first: Position, second: Position, board: Board<any>) => {
   const sameColumn = first.col === second.col;
 
-  let testArray = JSON.parse(JSON.stringify(board));
+  let testArray = JSON.parse(JSON.stringify(board.board));
+
+  for (let i = 0; i < board.height; i++) {
+    for (let j = 0; j < board.width; j++) {
+      testArray[i][j] = {
+        value: piece(board, { row: i, col: j }),
+        position: { row: i, col: j },
+      };
+    }
+  }
+
   let temp = testArray[first.row][first.col];
   testArray[first.row][first.col] = testArray[second.row][second.col];
   testArray[second.row][second.col] = temp;
@@ -120,20 +135,35 @@ const validateSwap = (first: Position, second: Position, board: any[][]) => {
   }
 };
 
-const checkForMatch = (array: any[]) => {
+const checkForMatch = (array: BoardItem<any>[]) => {
   var count = 0,
-    value = array[0],
-    matched = 0;
+    value: any,
+    matched = 0,
+    matchedItems = [];
 
   array.some((a) => {
-    if (value !== a) {
+    if (value !== a.value) {
       count = 0;
-      value = a;
+      value = a.value;
+      matchedItems = [];
     }
     ++count;
+    matchedItems.push(a);
     if (count >= 3) {
       matched = count;
+      // this.matchedItems = matchedItems;
     }
   });
+
+  console.log(
+    'Validation ',
+    array,
+    ' result: ',
+    matched >= 3,
+    ' Matched Items ',
+    // this.matchedItems,
+  );
+  matchedItems = [];
+  // this.matchedItems = [];
   return matched >= 3;
 };
