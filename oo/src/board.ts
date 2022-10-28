@@ -28,6 +28,7 @@ export class Board<T> {
   height: number;
   board: BoardItem<T>[][];
   matchedItems: BoardItem<T>[];
+  matchedSequences: BoardItem<T>[][];
   listener: BoardListener<T>;
 
   constructor(generator: Generator<T>, width: number, height: number) {
@@ -35,6 +36,7 @@ export class Board<T> {
     this.width = width;
     this.height = height;
     this.matchedItems = [];
+    this.matchedSequences = [];
     this.board = [...Array(height)].map(() => [...Array(width)]);
 
     for (let i = 0; i < this.height; i++) {
@@ -79,9 +81,33 @@ export class Board<T> {
 
   move(first: Position, second: Position) {
     if (this.canMove(first, second)) {
-      let temp = this.board[first.row][first.col];
-      this.board[first.row][first.col] = this.board[second.row][second.col];
-      this.board[second.row][second.col] = temp;
+      let temp = this.board[first.row][first.col].value;
+      this.board[first.row][first.col].value = this.board[second.row][second.col].value;
+      this.board[second.row][second.col].value = temp;
+
+      // removes the values that were matched
+      console.log(this.matchedSequences);
+      this.matchedSequences
+        .forEach(sequence =>
+          sequence
+            .forEach(boardItem => {
+              let { row, col } = boardItem.position;
+              this.board[row][col].value = undefined;
+            }
+            ));
+
+      this.shiftTilesDown();
+
+      let boardText = '';
+      for (var i = 0; i < this.board.length; i++) {
+        for (var j = 0; j < this.board[i].length; j++) {
+          boardText += this.board[i][j].value + ' ';
+        }
+        console.log(boardText);
+        boardText = '';
+      }
+
+      this.replaceTiles();
     }
   }
 
@@ -166,6 +192,7 @@ export class Board<T> {
       if (count >= 3) {
         matched = count;
         this.matchedItems = matchedItems;
+        this.matchedSequences.push(matchedItems);
         this.emitEvent('Match');
       }
     });
@@ -183,5 +210,26 @@ export class Board<T> {
     matchedItems = [];
     this.matchedItems = [];
     return matched >= 3;
+  }
+
+  private shiftTilesDown() {
+    for (let i = this.height - 1; i > 0; i--) {
+      for (let j = 0; j < this.width; j++) {
+        if (this.board[i][j]?.value == undefined) {
+          this.board[i][j].value = this.board[i - 1][j].value;
+          this.board[i - 1][j].value = undefined;
+        }
+      }
+    }
+  }
+
+  private replaceTiles() {
+    for (let i = this.height - 1; i >= 0; i--) {
+      for (let j = 0; j < this.width; j++) {
+        if (this.board[i][j]?.value == undefined) {
+          this.board[i][j].value = this.generator.next();
+        }
+      }
+    }
   }
 }
