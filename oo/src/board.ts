@@ -28,6 +28,7 @@ export class Board<T> {
   height: number;
   board: BoardItem<T>[][];
   matchedItems: BoardItem<T>[];
+  matchedSequences: BoardItem<T>[][];
   listener: BoardListener<T>;
 
   constructor(generator: Generator<T>, width: number, height: number) {
@@ -35,6 +36,7 @@ export class Board<T> {
     this.width = width;
     this.height = height;
     this.matchedItems = [];
+    this.matchedSequences = [];
     this.board = [...Array(height)].map(() => [...Array(width)]);
 
     for (let i = 0; i < this.height; i++) {
@@ -80,10 +82,34 @@ export class Board<T> {
   move(first: Position, second: Position) {
     if (this.canMove(first, second)) {
       let temp = this.board[first.row][first.col].value;
-      this.board[first.row][first.col].value =
-        this.board[second.row][second.col].value;
+      this.board[first.row][first.col].value = this.board[second.row][second.col].value;
       this.board[second.row][second.col].value = temp;
+
+      // removes the values that were matched
+      this.matchedSequences
+        .forEach(sequence =>
+          sequence
+            .forEach(boardItem => {
+              let { row, col } = boardItem.position;
+              this.board[row][col].value = undefined;
+            }
+            ));
+
+      this.shiftTilesDownAndReplace();
     }
+  }
+
+  private printBoard() {
+    let boardText = '';
+    console.log('------------');
+    for (var i = 0; i < this.board.length; i++) {
+      for (var j = 0; j < this.board[i].length; j++) {
+        boardText += this.board[i][j].value + ' ';
+      }
+      console.log(boardText);
+      boardText = '';
+    }
+    console.log('------------');
   }
 
   private isValidRow(index: number) {
@@ -169,6 +195,7 @@ export class Board<T> {
       if (count >= 3) {
         matched = count;
         this.matchedItems = matchedItems;
+        this.matchedSequences.push(matchedItems);
         console.log('Here', {
           value: this.matchedItems[0].value,
           items: this.matchedItems,
@@ -190,5 +217,31 @@ export class Board<T> {
     matchedItems = [];
     this.matchedItems = [];
     return matched >= 3;
+  }
+
+  private shiftTilesDownAndReplace() {
+    for (let row = this.height - 1; row >= 0; row--) {
+      for (let col = 0; col < this.width; col++) {
+        // go through the board from down/up and left/right
+        if (this.board[row][col].value == undefined) {
+          let columnValues = this.board.map((d) => d[col].value);
+
+          // get values in the column and add a new value in place
+          // at the index that it was removed
+          let firstNonUndef = columnValues
+            .findIndex((el) => el != undefined);
+          columnValues.splice(firstNonUndef, 0, this.generator.next())
+          columnValues = columnValues.filter(element => {
+            return element !== undefined;
+          });
+
+          // populate column back
+          for (let tempRow = this.height - 1; tempRow >= 0; tempRow--) {
+            let valueToPush = columnValues.pop();
+            this.board[tempRow][col].value = valueToPush;
+          }
+        }
+      }
+    }
   }
 }
