@@ -10,6 +10,11 @@ export type Match<T> = {
   positions: Position[];
 };
 
+type BoardItem<T> = {
+  value: T;
+  position: Position;
+};
+
 export type Board<T> = {
   generator: Generator<T>;
   width: number;
@@ -17,19 +22,20 @@ export type Board<T> = {
   board: BoardItem<T>[][];
 };
 
-type BoardItem<T> = {
-  value: T;
-  position: Position;
+export type Effect<T> = {
+  kind: 'Match' | 'Refill';
+  match?: Match<T>;
+  board?: Board<T>;
 };
-
-let matchedItems: BoardItem<any>[] = [];
-
-export type Effect<T> = {};
 
 export type MoveResult<T> = {
   board: Board<T>;
   effects: Effect<T>[];
 };
+
+let matchedItems: BoardItem<any>[] = [];
+let matchedSequences: BoardItem<any>[][] = [];
+let effects: Effect<any>[] = [];
 
 export function create<T>(
   generator: Generator<T>,
@@ -70,10 +76,10 @@ export function canMove<T>(
   const sameRow = first.col === second.col;
 
   if (
-    !isValidRow(first.row) ||
-    !isValidColumn(first.col) ||
-    !isValidRow(second.row) ||
-    !isValidColumn(second.col)
+    !isValidRow(first.row, board) ||
+    !isValidColumn(first.col, board) ||
+    !isValidRow(second.row, board) ||
+    !isValidColumn(second.col, board)
   ) {
     return false;
   }
@@ -81,7 +87,7 @@ export function canMove<T>(
   if ((sameRow && !sameColumn) || (!sameRow && sameColumn)) {
     return false;
   } else {
-    return validateSwap(first, second, board);
+    return validateSwap(first, second, board.board);
   }
 }
 
@@ -91,67 +97,160 @@ export function move<T>(
   first: Position,
   second: Position,
 ): MoveResult<T> {
-  return undefined;
+  if (canMove(board, first, second)) {
+    let temp = board.board[first.row][first.col].value;
+    board.board[first.row][first.col].value =
+      board.board[second.row][second.col].value;
+    board.board[second.row][second.col].value = temp;
+
+    addEffect('Refill');
+
+    // matchedSequences.forEach((sequence) =>
+    //   sequence.forEach((boardItem) => {
+    //     let { row, col } = boardItem.position;
+    //     board.board[row][col].value = undefined;
+    //   }),
+    // );
+
+    // shiftTilesDownAndReplace(board);
+    return {
+      board,
+      effects,
+    };
+  }
+  return {
+    board,
+    effects: [],
+  };
 }
 
-const isValidRow = (index: number) => {
-  return index >= 0 && index < 4;
+const isValidRow = <T>(index: number, board: Board<T>) => {
+  return index >= 0 && index < board.height;
 };
 
-const isValidColumn = (index: number) => {
-  return index >= 0 && index < 4;
+const isValidColumn = <T>(index: number, board: Board<T>) => {
+  return index >= 0 && index < board.width;
 };
 
-const validateSwap = (first: Position, second: Position, board: Board<any>) => {
+const addEffect = <T>(type: 'Match' | 'Refill', board?: Board<T>) => {
+  let effect: Effect<T>;
+
+  switch (type) {
+    case 'Match':
+      effect = {
+        kind: 'Match',
+        match: {
+          matched: matchedItems[0].value,
+          positions: matchedItems.map((a) => a.position),
+        },
+      };
+      break;
+    case 'Refill':
+      effect = { kind: 'Refill' };
+      break;
+    default:
+      effect = null;
+      break;
+  }
+
+  // effects = [effect, ...effects];
+  effects.push(effect);
+};
+
+const validateSwap = <T>(
+  first: Position,
+  second: Position,
+  board: BoardItem<T>[][],
+) => {
   const sameColumn = first.col === second.col;
 
-  let testArray = JSON.parse(JSON.stringify(board.board));
-  let temp = testArray[first.row][first.col];
-  testArray[first.row][first.col] = testArray[second.row][second.col];
-  testArray[second.row][second.col] = temp;
+  let testArray: BoardItem<T>[][] = JSON.parse(JSON.stringify(board));
+  let temp = testArray[first.row][first.col].value;
+  testArray[first.row][first.col].value =
+    testArray[second.row][second.col].value;
+  testArray[second.row][second.col].value = temp;
 
   if (sameColumn) {
     let columnValues = testArray.map((d) => d[first.col]);
 
-    return (
-      checkForMatch(testArray[first.row]) ||
-      checkForMatch(testArray[second.row]) ||
-      checkForMatch(columnValues)
-    );
+    let matchedFirstRow = checkForMatch(testArray[first.row]);
+    let matchedSecondRow = checkForMatch(testArray[second.row]);
+    let matchedColumn = checkForMatch(columnValues);
+
+    return matchedFirstRow || matchedSecondRow || matchedColumn;
   } else {
     let firstColumn = testArray.map((d) => d[first.col]);
     let secondColumn = testArray.map((d) => d[second.col]);
 
-    return (
-      checkForMatch(firstColumn) ||
-      checkForMatch(secondColumn) ||
-      checkForMatch(testArray[first.row])
-    );
+    let matchedRow = checkForMatch(testArray[first.row]);
+    let matchedFirstCol = checkForMatch(firstColumn);
+    let matchedSecondRCol = checkForMatch(secondColumn);
+
+    return matchedFirstCol || matchedSecondRCol || matchedRow;
   }
 };
 
-const checkForMatch = <T>(array: BoardItem<any>[]) => {
+const checkForMatch = <T>(array: BoardItem<T>[]) => {
   var count = 0,
     value: T,
     matched = 0,
-    matchedItemsLocal = [];
+    matchedLocalItems = [];
 
   array.some((a) => {
     if (value !== a.value) {
       count = 0;
       value = a.value;
-      matchedItemsLocal = [];
+      matchedLocalItems = [];
     }
     ++count;
-    matchedItemsLocal.push(a);
+    matchedLocalItems.push(a);
     if (count >= 3) {
       matched = count;
-      matchedItems = [...matchedItemsLocal];
-      // emitEvent('Match');
+      matchedItems = [...matchedLocalItems];
+      // matchedSequences.push(matchedItems);
+      addEffect('Match');
     }
   });
 
-  matchedItemsLocal = [];
+  matchedLocalItems = [];
   matchedItems = [];
   return matched >= 3;
+};
+
+const shiftTilesDownAndReplace = <T>(board: Board<T>) => {
+  for (let row = board.height - 1; row >= 0; row--) {
+    for (let col = 0; col < board.width; col++) {
+      // go through the board from down/up and left/right
+      if (board.board[row][col].value == undefined) {
+        let columnValues = board.board.map((d) => d[col].value);
+
+        // get values in the column and add a new value in place
+        // at the index that it was removed
+        let firstNonUndef = columnValues.findIndex((el) => el != undefined);
+        columnValues.splice(firstNonUndef, 0, board.generator.next());
+        columnValues = columnValues.filter((element) => {
+          return element !== undefined;
+        });
+
+        // populate column back
+        for (let tempRow = board.height - 1; tempRow >= 0; tempRow--) {
+          let valueToPush = columnValues.pop();
+          board.board[tempRow][col].value = valueToPush;
+        }
+      }
+    }
+  }
+};
+
+const printBoard = <T>(board: Board<T>) => {
+  let boardText = '';
+  console.log('------------');
+  for (var i = 0; i < board.board.length; i++) {
+    for (var j = 0; j < board.board[i].length; j++) {
+      boardText += board.board[i][j].value + ' ';
+    }
+    console.log(boardText);
+    boardText = '';
+  }
+  console.log('------------');
 };
