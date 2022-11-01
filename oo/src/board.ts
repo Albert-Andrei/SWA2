@@ -83,6 +83,7 @@ export class Board<T> {
       this.board[first.row][first.col].value =
         this.board[second.row][second.col].value;
       this.board[second.row][second.col].value = temp;
+      this.emitEvent('Refill');
     }
   }
 
@@ -169,24 +170,10 @@ export class Board<T> {
       if (count >= 3) {
         matched = count;
         this.matchedItems = matchedItems;
-        console.log('Here', {
-          value: this.matchedItems[0].value,
-          items: this.matchedItems,
-        });
         this.emitEvent('Match');
       }
     });
 
-    if (matched >= 3) {
-      // console.log(
-      //   'Validation ',
-      //   array,
-      //   ' result: ',
-      //   matched >= 3,
-      //   ' Matched Items ',
-      //   this.matchedItems,
-      // );
-    }
     matchedItems = [];
     this.matchedItems = [];
     return matched >= 3;

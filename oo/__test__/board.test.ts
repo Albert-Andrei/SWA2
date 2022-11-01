@@ -421,36 +421,52 @@ describe('Board', () => {
     //     })
     // })
 
-    // describe("Refill event", () => {
-    //     let events: BoardEvent<String>[]
-    //     let generator: GeneratorFake<String>
-    //     let board: Board<String>
+    describe('Refill event', () => {
+      let events: BoardEvent<String>[];
+      let generator: GeneratorFake<String>;
+      let board: Board<String>;
 
-    //     beforeEach(() => {
-    //         events = []
-    //         generator = new GeneratorFake<String>(
-    //             'A', 'B', 'A', 'C', 'F',
-    //             'D', 'B', 'C', 'C', 'A',
-    //             'D', 'A', 'C', 'B', 'F',
-    //             'C', 'D', 'D', 'C', 'D'
-    //         )
-    //         board = new Board(generator, 5, 4)
-    //         board.addListener(e => events.push(e))
-    //     })
+      beforeEach(() => {
+        events = [];
+        generator = new GeneratorFake<String>(
+          'A',
+          'B',
+          'A',
+          'C',
+          'F',
+          'D',
+          'B',
+          'C',
+          'C',
+          'A',
+          'D',
+          'A',
+          'C',
+          'B',
+          'F',
+          'C',
+          'D',
+          'D',
+          'C',
+          'D',
+        );
+        board = new Board(generator, 5, 4);
+        board.addListener((e) => events.push(e));
+      });
 
-    //   it("fires refill event after shifting", () => {
-    //         generator.prepare('B', 'C', 'D')
-    //         board.move({row: 0, col: 1}, {row: 2, col: 1})
-    //         expect(events[events.length - 1]).toEqual({ kind: 'Refill' })
-    //     })
-    //     it("fires nothing with no matches", () => {
-    //         board.move({row: 0, col: 0}, {row: 0, col: 0})
-    //         board.move({row: 1, col: 1}, {row: 2, col: 1})
-    //         board.move({row: 0, col: 3}, {row: 1, col: 2})
-    //         board.move({row: 3, col: 3}, {row: -1, col: 3})
-    //         expect(events).toEqual([])
-    //     })
-    // })
+      it('fires refill event after shifting', () => {
+        generator.prepare('B', 'C', 'D');
+        board.move({ row: 0, col: 1 }, { row: 2, col: 1 });
+        expect(events[events.length - 1]).toEqual({ kind: 'Refill' });
+      });
+      it('fires nothing with no matches', () => {
+        board.move({ row: 0, col: 0 }, { row: 0, col: 0 });
+        board.move({ row: 1, col: 1 }, { row: 2, col: 1 });
+        board.move({ row: 0, col: 3 }, { row: 1, col: 2 });
+        board.move({ row: 3, col: 3 }, { row: -1, col: 3 });
+        expect(events).toEqual([]);
+      });
+    });
 
     // describe("Cascading", () => {
     //     let events: BoardEvent<String>[]
