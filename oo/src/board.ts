@@ -86,7 +86,6 @@ export class Board<T> {
       this.board[second.row][second.col].value = temp;
 
       // removes the values that were matched
-      console.log(this.matchedSequences);
       this.matchedSequences
         .forEach(sequence =>
           sequence
@@ -111,7 +110,6 @@ export class Board<T> {
       boardText = '';
     }
     console.log('------------');
-
   }
 
   private isValidRow(index: number) {
@@ -223,11 +221,13 @@ export class Board<T> {
 
   private shiftTilesDownAndReplace() {
     for (let row = this.height - 1; row >= 0; row--) {
-
       for (let col = 0; col < this.width; col++) {
+        // go through the board from down/up and left/right
         if (this.board[row][col].value == undefined) {
           let columnValues = this.board.map((d) => d[col].value);
 
+          // get values in the column and add a new value in place
+          // at the index that it was removed
           let firstNonUndef = columnValues
             .findIndex((el) => el != undefined);
           columnValues.splice(firstNonUndef, 0, this.generator.next())
@@ -235,6 +235,7 @@ export class Board<T> {
             return element !== undefined;
           });
 
+          // populate column back
           for (let tempRow = this.height - 1; tempRow >= 0; tempRow--) {
             let valueToPush = columnValues.pop();
             this.board[tempRow][col].value = valueToPush;
