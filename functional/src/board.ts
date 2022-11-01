@@ -43,6 +43,8 @@ export function create<T>(
   height: number,
 ): Board<T> {
   let board = [...Array(height)].map(() => [...Array(width)]);
+  effects = [];
+  matchedSequences = [];
 
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
@@ -105,22 +107,24 @@ export function move<T>(
 
     addEffect('Refill');
 
-    // matchedSequences.forEach((sequence) =>
-    //   sequence.forEach((boardItem) => {
-    //     let { row, col } = boardItem.position;
-    //     board.board[row][col].value = undefined;
-    //   }),
-    // );
+    matchedSequences.forEach((sequence) =>
+      sequence.forEach((boardItem) => {
+        let { row, col } = boardItem.position;
+        board.board[row][col].value = undefined;
+      }),
+    );
 
-    // shiftTilesDownAndReplace(board);
+    shiftTilesDownAndReplace(board);
     return {
       board,
       effects,
     };
   }
+
+  effects = [];
   return {
     board,
-    effects: [],
+    effects,
   };
 }
 
@@ -153,7 +157,6 @@ const addEffect = <T>(type: 'Match' | 'Refill', board?: Board<T>) => {
       break;
   }
 
-  // effects = [effect, ...effects];
   effects.push(effect);
 };
 
@@ -207,7 +210,7 @@ const checkForMatch = <T>(array: BoardItem<T>[]) => {
     if (count >= 3) {
       matched = count;
       matchedItems = [...matchedLocalItems];
-      // matchedSequences.push(matchedItems);
+      matchedSequences.push(matchedItems);
       addEffect('Match');
     }
   });
