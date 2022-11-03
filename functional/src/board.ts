@@ -105,16 +105,9 @@ export function move<T>(
       board.board[second.row][second.col].value;
     board.board[second.row][second.col].value = temp;
 
-    addEffect('Refill');
+    refillMatched(board);
 
-    matchedSequences.forEach((sequence) =>
-      sequence.forEach((boardItem) => {
-        let { row, col } = boardItem.position;
-        board.board[row][col].value = undefined;
-      }),
-    );
-
-    shiftTilesDownAndReplace(board);
+    checkBoardMatches(board);
     return {
       board,
       effects,
@@ -191,6 +184,49 @@ const validateSwap = <T>(
 
     return matchedFirstCol || matchedSecondRCol || matchedRow;
   }
+};
+
+const checkBoardMatches = <T>(board: Board<T>) => {
+  let matched = false;
+  matchedSequences = [];
+
+  // Check if there are matches in rows
+  board.board.forEach((row) => {
+    if (checkForMatch(row)) {
+      matched = true;
+    }
+  });
+
+  // Check if there are matches in columns
+  [...Array(board.width)].map((item, index) => {
+    let testColumn = board.board.map((d) => d[index]);
+    if (checkForMatch(testColumn)) {
+      matched = true;
+    }
+  });
+
+  if (!matched) {
+    return;
+  }
+
+  refillMatched(board);
+
+  // Calling this function to check again if there are any matches after refilling
+  checkBoardMatches(board);
+};
+
+const refillMatched = <T>(board: Board<T>) => {
+  // removes the values that were matched
+  matchedSequences.forEach((sequence) =>
+    sequence.forEach((boardItem) => {
+      let { row, col } = boardItem.position;
+      board.board[row][col].value = undefined;
+    }),
+  );
+
+  addEffect('Refill');
+
+  shiftTilesDownAndReplace(board);
 };
 
 const checkForMatch = <T>(array: BoardItem<T>[]) => {
