@@ -614,52 +614,124 @@ describe('Board', () => {
       });
     });
 
-    // describe("Cascading", () => {
-    //     let generator: GeneratorFake<String>
-    //     let board: Board.Board<String>
+    describe('Cascading', () => {
+      let generator: GeneratorFake<String>;
+      let board: Board.Board<String>;
 
-    //     beforeEach(() => {
-    //         generator = new GeneratorFake<String>(
-    //             'A', 'B', 'A',
-    //             'D', 'B', 'C',
-    //             'D', 'A', 'C',
-    //             'C', 'D', 'D',
-    //         )
-    //         board = Board.create(generator, 3, 4)
-    //     })
+      beforeEach(() => {
+        generator = new GeneratorFake<String>(
+          'A',
+          'B',
+          'A',
+          'D',
+          'B',
+          'C',
+          'D',
+          'A',
+          'C',
+          'C',
+          'D',
+          'D',
+        );
+        board = Board.create(generator, 3, 4);
+      });
 
-    //     // To not put constrains on the Board type.
-    //     const forgetBoard = (e: Effect<String>) => {
-    //         if (e.kind === 'Match') {
-    //             return e
-    //         } else {
-    //             return { kind: e.kind }
-    //         }
-    //     }
-    //     it("registers if refilling brings new matches", () => {
-    //         generator.prepare('B', 'C', 'C')
-    //         generator.prepare('A', 'A', 'D')
-    //         expect(Board.move(generator, board, {row: 0, col: 1}, {row: 2, col: 1}).effects.map(forgetBoard)).toEqual([
-    //             {kind: 'Match', match: {matched: 'A', positions: [{row: 0, col: 0}, {row: 0, col: 1}, {row: 0, col: 2}]}},
-    //             {kind: 'Refill'},
-    //             {kind: 'Match', match: {matched: 'C', positions: [{row: 0, col: 2}, {row: 1, col: 2}, {row: 2, col: 2}]}},
-    //             {kind: 'Refill'},
-    //         ])
-    //     })
+      // To not put constrains on the Board type.
+      const forgetBoard = (e: Effect<String>) => {
+        if (e.kind === 'Match') {
+          return e;
+        } else {
+          return { kind: e.kind };
+        }
+      };
+      it('registers if refilling brings new matches', () => {
+        generator.prepare('B', 'C', 'C');
+        generator.prepare('A', 'A', 'D');
+        expect(
+          Board.move(
+            generator,
+            board,
+            { row: 0, col: 1 },
+            { row: 2, col: 1 },
+          ).effects.map(forgetBoard),
+        ).toEqual([
+          {
+            kind: 'Match',
+            match: {
+              matched: 'A',
+              positions: [
+                { row: 0, col: 0 },
+                { row: 0, col: 1 },
+                { row: 0, col: 2 },
+              ],
+            },
+          },
+          { kind: 'Refill' },
+          {
+            kind: 'Match',
+            match: {
+              matched: 'C',
+              positions: [
+                { row: 0, col: 2 },
+                { row: 1, col: 2 },
+                { row: 2, col: 2 },
+              ],
+            },
+          },
+          { kind: 'Refill' },
+        ]);
+      });
 
-    //     it("iterates until there are no new matches", () => {
-    //         generator.prepare('B', 'C', 'C')
-    //         generator.prepare('A', 'A', 'A')
-    //         generator.prepare('A', 'A', 'D')
-    //         expect(Board.move(generator, board, {row: 0, col: 1}, {row: 2, col: 1}).effects.map(forgetBoard)).toEqual([
-    //             {kind: 'Match', match: {matched: 'A', positions: [{row: 0, col: 0}, {row: 0, col: 1}, {row: 0, col: 2}]}},
-    //             {kind: 'Refill'},
-    //             {kind: 'Match', match: {matched: 'C', positions: [{row: 0, col: 2}, {row: 1, col: 2}, {row: 2, col: 2}]}},
-    //             {kind: 'Refill'},
-    //             {kind: 'Match', match: {matched: 'A', positions: [{row: 0, col: 2}, {row: 1, col: 2}, {row: 2, col: 2}]}},
-    //             {kind: 'Refill'},
-    //         ])
-    //     })
-    // })
+      it('iterates until there are no new matches', () => {
+        generator.prepare('B', 'C', 'C');
+        generator.prepare('A', 'A', 'A');
+        generator.prepare('A', 'A', 'D');
+        expect(
+          Board.move(
+            generator,
+            board,
+            { row: 0, col: 1 },
+            { row: 2, col: 1 },
+          ).effects.map(forgetBoard),
+        ).toEqual([
+          {
+            kind: 'Match',
+            match: {
+              matched: 'A',
+              positions: [
+                { row: 0, col: 0 },
+                { row: 0, col: 1 },
+                { row: 0, col: 2 },
+              ],
+            },
+          },
+          { kind: 'Refill' },
+          {
+            kind: 'Match',
+            match: {
+              matched: 'C',
+              positions: [
+                { row: 0, col: 2 },
+                { row: 1, col: 2 },
+                { row: 2, col: 2 },
+              ],
+            },
+          },
+          { kind: 'Refill' },
+          {
+            kind: 'Match',
+            match: {
+              matched: 'A',
+              positions: [
+                { row: 0, col: 2 },
+                { row: 1, col: 2 },
+                { row: 2, col: 2 },
+              ],
+            },
+          },
+          { kind: 'Refill' },
+        ]);
+      });
+    });
   });
 });
