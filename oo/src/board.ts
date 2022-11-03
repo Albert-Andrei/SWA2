@@ -39,6 +39,7 @@ export class Board<T> {
     this.matchedSequences = [];
     this.board = [...Array(height)].map(() => [...Array(width)]);
 
+    // Initializing the board. Adding the value and the coordinates of it's position
     for (let i = 0; i < this.height; i++) {
       for (let j = 0; j < this.width; j++) {
         this.board[i][j] = {
@@ -85,32 +86,14 @@ export class Board<T> {
       this.board[first.row][first.col].value =
         this.board[second.row][second.col].value;
       this.board[second.row][second.col].value = temp;
-      this.emitEvent('Refill');
 
-      // removes the values that were matched
-      this.matchedSequences.forEach((sequence) =>
-        sequence.forEach((boardItem) => {
-          let { row, col } = boardItem.position;
-          this.board[row][col].value = undefined;
-        }),
-      );
+      this.refillMatched();
 
-      this.shiftTilesDownAndReplace();
+      this.checkBoardMatches();
     }
   }
 
-  private printBoard() {
-    let boardText = '';
-    console.log('------------');
-    for (var i = 0; i < this.board.length; i++) {
-      for (var j = 0; j < this.board[i].length; j++) {
-        boardText += this.board[i][j].value + ' ';
-      }
-      console.log(boardText);
-      boardText = '';
-    }
-    console.log('------------');
-  }
+  // Local functions
 
   private isValidRow(index: number) {
     return index >= 0 && index < this.height;
@@ -150,8 +133,10 @@ export class Board<T> {
   private validateSwap(first: Position, second: Position) {
     const sameColumn = first.col === second.col;
 
+    // Create a copy of existing board to check if the swap will result in a match
     let testArray: BoardItem<T>[][] = JSON.parse(JSON.stringify(this.board));
 
+    // Swapping the values
     let temp = testArray[first.row][first.col].value;
     testArray[first.row][first.col].value =
       testArray[second.row][second.col].value;
@@ -174,6 +159,35 @@ export class Board<T> {
 
       return matchedFirstCol || matchedSecondRCol || matchedRow;
     }
+  }
+
+  private checkBoardMatches() {
+    let matched = false;
+    this.matchedSequences = [];
+
+    // Check if there are matches in rows
+    this.board.forEach((row) => {
+      if (this.checkForMatch(row)) {
+        matched = true;
+      }
+    });
+
+    // Check if there are matches in columns
+    [...Array(this.width)].map((item, index) => {
+      let testColumn = this.board.map((d) => d[index]);
+      if (this.checkForMatch(testColumn)) {
+        matched = true;
+      }
+    });
+
+    if (!matched) {
+      return;
+    }
+
+    this.refillMatched();
+
+    // Calling this function to check again if there are any matches after refilling
+    this.checkBoardMatches();
   }
 
   private checkForMatch(array: BoardItem<T>[]) {
@@ -203,6 +217,20 @@ export class Board<T> {
     return matched >= 3;
   }
 
+  private refillMatched() {
+    // removes the values that were matched
+    this.matchedSequences.forEach((sequence) =>
+      sequence.forEach((boardItem) => {
+        let { row, col } = boardItem.position;
+        this.board[row][col].value = undefined;
+      }),
+    );
+
+    this.emitEvent('Refill');
+
+    this.shiftTilesDownAndReplace();
+  }
+
   private shiftTilesDownAndReplace() {
     for (let row = this.height - 1; row >= 0; row--) {
       for (let col = 0; col < this.width; col++) {
@@ -226,5 +254,18 @@ export class Board<T> {
         }
       }
     }
+  }
+
+  private printBoard() {
+    let boardText = '';
+    console.log('------------');
+    for (var i = 0; i < this.board.length; i++) {
+      for (var j = 0; j < this.board[i].length; j++) {
+        boardText += this.board[i][j].value + ' ';
+      }
+      console.log(boardText);
+      boardText = '';
+    }
+    console.log('------------');
   }
 }
